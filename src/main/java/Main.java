@@ -2,11 +2,14 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -32,18 +35,20 @@ public class Main {
             List<Employee> list = new ArrayList<>();
             for (int i = 0; i < nodeList.getLength(); i++) {
                 Node node = nodeList.item(i);
-                try {
-                    String[] dataEmployee = node.getTextContent().split("\n");
-                    for (int j = 0; j < dataEmployee.length; j++) {
-                        dataEmployee[j] = dataEmployee[j].replaceAll(" ", "");
-                    }
-                    list.add(new Employee(Long.parseLong(dataEmployee[1]), dataEmployee[2], dataEmployee[3], dataEmployee[4], Integer.parseInt(dataEmployee[5])));
-                } catch (Exception exception) {}
+                if (Node.ELEMENT_NODE == node.getNodeType()) {
+                    Element element = (Element) node;
+                    long id = Long.parseLong(getElement(element, "id"));
+                    String firstName = getElement(element, "firstName");
+                    String lastName = getElement(element, "lastName");
+                    String country = getElement(element, "country");
+                    int age = Integer.parseInt(getElement(element, "age"));
+                    Employee employee = new Employee(id, firstName, lastName, country, age);
+                    list.add(employee);
+                }
             }
             return list;
-        } catch (Exception e) {
+        } catch (ParserConfigurationException | SAXException | IOException e) {
             e.printStackTrace();
-            System.out.println(e.getMessage());
             return null;
         }
     }
@@ -54,7 +59,11 @@ public class Main {
         try (FileWriter fileWriter = new FileWriter(file)) {
             fileWriter.write(gson.toJson(list, listType));
         } catch (IOException e) {
-            System.out.println(e.getMessage());
+            e.printStackTrace();
         }
+    }
+
+    public static String getElement(Element element, String name) {
+        return element.getElementsByTagName(name).item(0).getTextContent();
     }
 }
